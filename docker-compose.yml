@@ -2,7 +2,7 @@ version: '3'
 services:
   app:
     container_name: app-server
-    image: nextcloud:fpm
+    image: nextcloud:fpm-alpine
     restart: always
     expose:
       - '80'
@@ -12,10 +12,10 @@ services:
       -  ./www.conf:/usr/local/etc/php-fpm.d/www.conf  
     environment:
       - MYSQL_HOST=db
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=8a5c46d4cc6f0ef980b0d1b20977e99f
-      - MYSQL_DATABASE=nextcloud
       - REDIS_HOST=redis
+      - OWNCLOUD_TRUSTED_DOMAINS=localhost,nginx-server,office.kdplaw.eu
+    env_file:
+      - db.env  
     depends_on:
       - db
       - redis
@@ -34,41 +34,88 @@ services:
     volumes:
       - document_data:/var/www/onlyoffice/Data
       - document_log:/var/log/onlyoffice
-  nginx:
-    container_name: nginx-server
-    image: nginx
-    restart: always
-    ports:
-      - 80:80
-      - 443:443
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/common.conf:/etc/nginx/common.conf:ro
-      - app_data:/var/www/html
+
   db:
-    image: mariadb:10.5
+    image: mariadb:10.6
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
     container_name: nextcloud-db
     volumes:
       - mysql_data:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=cfcc4953d569b9fa8f5eca7b7376c395
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=8a5c46d4cc6f0ef980b0d1b20977e99f
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1
+    env_file:
+      - db.env
     restart: always
+
   redis:
-    image: redis
+    image: redis:alpine
     container_name: nextcloud-redis
     restart: always
-    ports:
-      - 6379:6379
-    volumes:
-      - redis-data:/data
-    entrypoint: redis-server --appendonly yes
-volumes:
-  document_data:
-  document_log:
-  app_data:
-  mysql_data:
-  redis-data:
 
+  web:
+    build: ./web
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html:z,ro
+    environment:
+      - VIRTUAL_HOST=office.kdplaw.eu
+      - LETSENCRYPT_HOST=office.kdplaw.eu
+      - LETSENCRYPT_EMAIL=dimitar.dekov@gmail.com
+    depends_on:
+      - app
+    networks:
+      - proxy-tier
+      - default
+
+  cron:
+    image: nextcloud:fpm-alpine
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html:z
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
+
+  proxy:
+    build: ./proxy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:z,ro
+      - vhost.d:/etc/nginx/vhost.d:z
+      - html:/usr/share/nginx/html:z
+      - /var/run/docker.sock:/tmp/docker.sock:z,ro
+    networks:
+      - proxy-tier
+
+  letsencrypt-companion:
+    image: nginxproxy/acme-companion
+    restart: always
+    volumes:
+      - certs:/etc/nginx/certs:z
+      - acme:/etc/acme.sh:z
+      - vhost.d:/etc/nginx/vhost.d:z
+      - html:/usr/share/nginx/html:z
+      - /var/run/docker.sock:/var/run/docker.sock:z,ro
+    networks:
+      - proxy-tier
+    depends_on:
+      - proxy
+
+volumes:
+  db:
+  nextcloud:
+  certs:
+  acme:
+  vhost.d:
+  html:
+
+networks:
+  proxy-tier:

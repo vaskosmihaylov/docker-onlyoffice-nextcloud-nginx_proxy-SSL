@@ -9,10 +9,25 @@ services:
       - '9000'
     volumes:
       - app_data:/var/www/html
+      -  ./www.conf:/usr/local/etc/php-fpm.d/www.conf  
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=8a5c46d4cc6f0ef980b0d1b20977e99f
+      - MYSQL_DATABASE=nextcloud
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+
   onlyoffice-document-server:
     container_name: onlyoffice-document-server
     image: onlyoffice/documentserver:latest
     restart: always
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=mysecret
+      - JWT_HEADER=Authorization
     expose:
       - '80'
       - '443'
@@ -30,8 +45,30 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/common.conf:/etc/nginx/common.conf:ro
       - app_data:/var/www/html
+  db:
+    image: mariadb:10.5
+    container_name: nextcloud-db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=cfcc4953d569b9fa8f5eca7b7376c395
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=8a5c46d4cc6f0ef980b0d1b20977e99f
+    restart: always
+  redis:
+    image: redis
+    container_name: nextcloud-redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    entrypoint: redis-server --appendonly yes
 volumes:
   document_data:
   document_log:
   app_data:
   mysql_data:
+  redis-data:
+

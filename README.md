@@ -14,8 +14,8 @@ This repository provides a complete setup for integrating OnlyOffice Document Se
 1. Get the latest version of this repository running the command:
 
     ```
-    git clone https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud
-    cd docker-onlyoffice-nextcloud
+    git clone https://github.com/vaskosmihaylov/docker-onlyoffice-nextcloud-nginx_proxy-SSL
+    cd docker-onlyoffice-nextcloud-nginx_proxy-SSL
     ```
 
 2. Edit the configuration varaibles and Run Docker Compose:

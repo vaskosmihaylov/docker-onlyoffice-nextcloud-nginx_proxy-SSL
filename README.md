@@ -1,7 +1,6 @@
-## Document Server and Nextcloud Docker installation
+## Install NextCloud Hub + OnlyOffice + MariaDB + Nginx Proxy + Acme-companion Ubuntu 22.04 with Docker Compose
 
-Document Server (distributed as ONLYOFFICE Docs starting from v.6.0) and Nextcloud Docker installation will install the preconfigured version of [ONLYOFFICE Document Server][2] connected to Nextcloud to your server running them in Docker containers.
-
+This repository provides a complete setup for integrating OnlyOffice Document Server with Nextcloud configured to use MariaDB using Nginx proxy and Docker's Let's Encrypt Nginx Proxy Companion containers.
 
 ## Requirements
 
@@ -18,19 +17,16 @@ Document Server (distributed as ONLYOFFICE Docs starting from v.6.0) and Nextclo
     cd docker-onlyoffice-nextcloud
     ```
 
-2. Run Docker Compose:
+2. Edit the configuration varaibles and Run Docker Compose:
+
+    Edit NEXTCLOUD_TRUSTED_DOMAINS, JWT_SECRET, MYSQL_ROOT_PASSWORD, VIRTUAL_HOST, LETSENCRYPT_HOST, LETSENCRYPT_EMAIL in `docker-compose.yml`
+
+    Edit MYSQL_PASSWORD in the `db.env`
 
     **Please note**: the action must be performed with **root** rights.
 
     ```
     docker-compose up -d
-    ```
-
-    To enable SSL encryption, create `certs` folder and copy the private key named as `privkey.pem` and the certificate named as `fullchain.pem` to it.  
-    Run this command:
-
-    ```
-    docker-compose -f docker-compose.yml -f ssl.yml up -d
     ```
 
     **Please note**: you might need to wait a couple of minutes when all the containers are up and running after the above command.
@@ -47,7 +43,9 @@ Document Server (distributed as ONLYOFFICE Docs starting from v.6.0) and Nextclo
 
 Now you can enter Nextcloud and create a new document. It will be opened in ONLYOFFICE Document Server.
 
+**Automated setup:**
 
+The fully automated setup using a reverse proxy, a container for Let's Encrypt certificate handling, database, and Nextcloud is taken from the [Nextcloud Docker Examples](https://github.com/nextcloud/docker/tree/master/.examples/docker-compose/with-nginx-proxy/mariadb) and modified accordingly
 ## ONLYOFFICE Docs editions
 
 Here we offer you to deploy Nextcloud with preconfigured free version of ONLYOFFICE Docs (Document Server). Note that there're commercial versions of it. 

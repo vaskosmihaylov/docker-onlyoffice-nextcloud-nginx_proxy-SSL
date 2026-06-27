@@ -1,3 +1,8 @@
 certs
-AGENTS.MD
-.serena
+
+# Agent setup — LOCAL ONLY, do not commit
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.serena/
